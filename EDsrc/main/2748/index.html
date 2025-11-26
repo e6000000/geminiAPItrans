@@ -1,398 +1,353 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gemini Live Translator (Standalone)</title>
-    <!-- chat Hier ist die **Standalone-Lösung ("Single File App")**.
-
-Ich habe die Logik aus App 2 (TypeScript/React) extrahiert und in **natives, reines JavaScript** portiert. Es benötigt keine Installation, kein `npm`, kein `node_modules`.
-
-**Anleitung:**
-
-1.  Erstelle einen Ordner.
-2.  Speichere den Code unten als `index.html`.
-3.  **WICHTIG:** Da Browser den Zugriff auf das Mikrofon bei reinen `file://`-Dateien oft blockieren, musst du es über einen lokalen Server starten.
-      * Wenn du Python hast: `python -m http.server` im Ordner ausführen.
-      * Dann im Browser: `http://localhost:8000` öffnen.
-4.  Gib deinen **Google API Key** ein (benötigt Zugriff auf `gemini-2.0-flash-exp` oder ähnliche Modelle).
-
-### Der Code (`index.html`)
-
-```html
--->
+    <title>Gemini Live Core (Stable)</title>
+    <script src="config.js"></script>
     <style>
-        :root { --bg: #0e1117; --panel: #1e212b; --accent: #4a9eff; --text: #e0e0e0; --err: #ff4a4a; }
-        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', monospace; margin: 0; padding: 20px; display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; }
-        .container { max-width: 800px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; gap: 15px; }
+        :root { --bg: #0b1120; --panel: #1e293b; --accent: #3b82f6; --text: #f1f5f9; --green: #10b981; --red: #ef4444; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
         
-        /* Header & Config */
-        .card { background: var(--panel); padding: 15px; border-radius: 8px; border: 1px solid #333; }
-        h1 { margin: 0 0 10px 0; font-size: 1.2rem; color: var(--accent); }
+        .panel { background: var(--panel); padding: 32px; border-radius: 24px; width: 100%; max-width: 650px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); border: 1px solid #334155; }
+        h1 { margin: 0; font-size: 1.8rem; font-weight: 800; text-align: center; background: linear-gradient(to right, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .tagline { text-align: center; color: #64748b; font-size: 0.85rem; margin-bottom: 25px; font-family: monospace; }
+
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+        .full { grid-column: span 2; }
         
-        .row { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
-        input, select, button { background: #000; color: #fff; border: 1px solid #444; padding: 8px; border-radius: 4px; font-family: monospace; }
-        input { flex: 1; }
-        button { cursor: pointer; font-weight: bold; transition: background 0.2s; }
-        button:hover { background: #333; }
-        button.active { background: var(--err); color: #fff; border-color: var(--err); }
-        button.start { background: #28a745; border-color: #28a745; }
+        label { font-size: 0.7rem; color: #94a3b8; margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; }
+        
+        select, button { width: 100%; padding: 12px 16px; background: #0f172a; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; font-size: 0.95rem; outline: none; transition: all 0.2s; }
+        select:focus { border-color: var(--accent); }
+        
+        button { font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 10px; border: none; }
+        
+        /* Button States */
+        .btn-ready { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4); }
+        .btn-connecting { background: #475569; cursor: wait; opacity: 0.8; }
+        .btn-live { background: #ef4444; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4); animation: pulse 2s infinite; }
+        
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
 
-        /* Visualizer */
-        canvas { width: 100%; height: 60px; background: #000; border-radius: 4px; border: 1px solid #333; }
+        #status { text-align: center; font-size: 0.9rem; color: #64748b; margin-top: 20px; font-weight: 500; height: 24px; }
 
-        /* Logs */
-        #log { flex: 1; background: #000; border: 1px solid #333; border-radius: 4px; padding: 10px; overflow-y: auto; font-family: monospace; font-size: 0.85rem; white-space: pre-wrap; height: 300px; }
-        .log-user { color: #4a9eff; }
-        .log-model { color: #a8ff4a; }
-        .log-sys { color: #888; font-style: italic; }
-        .log-err { color: #ff4a4a; }
-
-        /* Settings grid */
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .meter-group { background: #0b1120; border-radius: 12px; padding: 12px; border: 1px solid #334155; margin-top: 8px; }
+        .meter-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .meter-label { font-size: 0.7rem; font-weight: 700; color: #64748b; }
+        .track { width: 100%; height: 6px; background: #1e293b; border-radius: 3px; overflow: hidden; }
+        .bar { height: 100%; width: 0%; transition: width 0.08s ease-out; border-radius: 3px; }
+        #fillIn { background: var(--green); }
+        #fillOut { background: var(--accent); }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="card">
-        <h1>Gemini Live Translation Engine (Native Audio)</h1>
+    <div class="panel">
+        <h1>Gemini Live Core</h1>
+        <div class="tagline">AudioWorklet Engine • v6 Stable</div>
         
-        <div class="row">
-            <input type="password" id="apiKey" placeholder="Enter Google API Key (AI Studio)" value="">
+        <div class="grid">
+            <div class="full">
+                <label>KI Modell (Versuche wechseln bei Fehler)</label>
+                <select id="modelSelect">
+                    <option value="models/gemini-2.0-flash-exp">Gemini 2.0 Flash Exp (Standard)</option>
+                    <option value="models/gemini-2.0-flash-thinking-exp-1219">Gemini 2.0 Thinking (Alternativ)</option>
+                </select>
+            </div>
+            <div>
+                <label>Zielsprache</label>
+                <select id="targetLang">
+                    <option value="English">Englisch 🇺🇸</option>
+                    <option value="German">Deutsch 🇩🇪</option>
+                    <option value="Spanish">Spanisch 🇪🇸</option>
+                    <option value="Japanese">Japanisch 🇯🇵</option>
+                </select>
+            </div>
+            <div>
+                 <label>Stimme</label>
+                 <select id="voiceName">
+                    <option value="Puck">Puck (M)</option>
+                    <option value="Aoede">Aoede (W)</option>
+                    <option value="Charon">Charon (M)</option>
+                    <option value="Kore">Kore (W)</option>
+                    <option value="Fenrir">Fenrir (M)</option>
+                 </select>
+            </div>
         </div>
 
         <div class="grid">
-            <select id="audioInput"><option>Loading devices...</option></select>
-            <select id="voice">
-                <option value="Puck">Voice: Puck</option>
-                <option value="Charon">Voice: Charon</option>
-                <option value="Kore">Voice: Kore</option>
-                <option value="Fenrir">Voice: Fenrir</option>
-                <option value="Aoede">Voice: Aoede</option>
-            </select>
+            <div class="full">
+                <label>Mikrofon</label>
+                <select id="micSelect"><option>Lade Geräte...</option></select>
+                <div class="meter-group">
+                    <div class="meter-row"><span class="meter-label">MIC INPUT</span></div>
+                    <div class="track"><div class="bar" id="fillIn"></div></div>
+                </div>
+            </div>
+
+            <div class="full">
+                <label>Lautsprecher</label>
+                <select id="speakerSelect"><option>Standard</option></select>
+                <div class="meter-group">
+                    <div class="meter-row"><span class="meter-label">AI OUTPUT</span></div>
+                    <div class="track"><div class="bar" id="fillOut"></div></div>
+                </div>
+            </div>
         </div>
-        
-        <div class="row" style="margin-top: 10px;">
-            <button id="btnToggle" class="start">START LIVE SESSION</button>
-            <div style="flex:1; text-align:right; font-size:0.8rem; color:#666;" id="status">Ready</div>
-        </div>
-        
-        <canvas id="vis"></canvas>
+
+        <button id="btnMain" class="btn-ready">Session Starten</button>
+        <div id="status">Bereit.</div>
     </div>
 
-    <div id="log"></div>
-</div>
-
 <script>
-/**
- * CORE LOGIC - Extracted from App 2
- * Handles: AudioContext (16kHz), WebSocket (Gemini), PCM Conversion
- */
-
-// --- CONFIG ---
-const MODEL = "models/gemini-2.0-flash-exp"; // Or "gemini-2.0-flash-exp"
-const HOST = "generativelanguage.googleapis.com";
-const SAMPLE_RATE = 24000; // Gemini Native often prefers 24k output, input usually 16k
-
-// --- STATE ---
-let ctx = null;           // AudioContext
-let ws = null;            // WebSocket
-let micStream = null;     // MediaStream
-let inputProcessor = null;// ScriptProcessor (Recorder)
-let isConnected = false;
-let audioQueue = [];      // Queue for PCM playback
-let nextStartTime = 0;    // For drift correction
-let visualizerInterval = null;
-
-// --- DOM ELEMENTS ---
-const ui = {
-    key: document.getElementById('apiKey'),
-    mic: document.getElementById('audioInput'),
-    voice: document.getElementById('voice'),
-    btn: document.getElementById('btnToggle'),
-    log: document.getElementById('log'),
-    cvs: document.getElementById('vis'),
-    status: document.getElementById('status')
-};
-const cvsCtx = ui.cvs.getContext('2d');
-
-// --- LOGGER ---
-function log(msg, type='sys') {
-    const d = document.createElement('div');
-    d.className = `log-${type}`;
-    d.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
-    ui.log.appendChild(d);
-    ui.log.scrollTop = ui.log.scrollHeight;
-}
-
-// --- AUDIO UTILS ---
-// Convert Float32 (WebAudio) to Int16 (PCM)
-function floatTo16BitPCM(input) {
-    const output = new Int16Array(input.length);
-    for (let i = 0; i < input.length; i++) {
-        const s = Math.max(-1, Math.min(1, input[i]));
-        output[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+// --- AUDIO WORKLET (INLINED) ---
+const WORKLET_CODE = `
+class PCMProcessor extends AudioWorkletProcessor {
+    process(inputs, outputs) {
+        const input = inputs[0];
+        if (input && input.length > 0) {
+            this.port.postMessage(input[0]);
+        }
+        return true;
     }
-    return output;
 }
+registerProcessor('pcm-processor', PCMProcessor);
+`;
 
-// Base64 Helpers
-function arrayBufferToBase64(buffer) {
-    let binary = '';
-    const bytes = new Uint8Array(buffer);
-    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-    return btoa(binary);
-}
+const CONFIG = { host: "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent" };
 
-function base64ToArrayBuffer(base64) {
-    const binary_string = window.atob(base64);
-    const len = binary_string.length;
-    const bytes = new Uint8Array(len);
-    for (let i = 0; i < len; i++) bytes[i] = binary_string.charCodeAt(i);
-    return bytes.buffer;
-}
+// Global State
+let audioCtx = null;
+let workletNode = null;
+let micStream = null;
+let micSource = null;
+let inputAnalyser = null;
+let outputAnalyser = null;
+let ws = null;
+let isConnected = false;
+let nextStartTime = 0;
 
-// --- DEVICE MANAGEMENT ---
-async function loadDevices() {
-    ui.mic.innerHTML = "";
+const ui = {
+    mic: document.getElementById('micSelect'),
+    spk: document.getElementById('speakerSelect'),
+    model: document.getElementById('modelSelect'),
+    lang: document.getElementById('targetLang'),
+    voice: document.getElementById('voiceName'),
+    btn: document.getElementById('btnMain'),
+    status: document.getElementById('status'),
+    fillIn: document.getElementById('fillIn'),
+    fillOut: document.getElementById('fillOut')
+};
+
+// 1. INIT
+async function init() {
     try {
-        const devs = await navigator.mediaDevices.enumerateDevices();
-        const inputs = devs.filter(d => d.kind === 'audioinput');
-        inputs.forEach(d => {
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        ui.mic.innerHTML = ''; ui.spk.innerHTML = '';
+        
+        devices.forEach(d => {
             const opt = document.createElement('option');
             opt.value = d.deviceId;
-            opt.textContent = d.label || `Mic ${d.deviceId.slice(0,5)}`;
-            ui.mic.appendChild(opt);
+            opt.text = d.label || d.kind;
+            if(d.kind === 'audioinput') ui.mic.appendChild(opt);
+            if(d.kind === 'audiooutput') ui.spk.appendChild(opt);
         });
-        if(inputs.length === 0) ui.mic.innerHTML = "<option>No Mics Found</option>";
-    } catch(e) {
-        log("Permission needed to list devices", "err");
+
+        // Voicemeeter Auto-Select
+        const vmIn = Array.from(ui.mic.options).find(o => o.text.includes("VoiceMeeter Out"));
+        if(vmIn) ui.mic.value = vmIn.value;
+
+        startMonitoring();
+    } catch(e) { ui.status.innerText = "Mikrofon fehlt!"; ui.status.style.color = "red"; }
+}
+
+// 2. MONITORING
+async function startMonitoring() {
+    if(audioCtx) await audioCtx.close();
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000, latencyHint: 'interactive' });
+    
+    // Worklet laden
+    const blob = new Blob([WORKLET_CODE], { type: 'application/javascript' });
+    await audioCtx.audioWorklet.addModule(URL.createObjectURL(blob));
+
+    try {
+        micStream = await navigator.mediaDevices.getUserMedia({
+            audio: { 
+                deviceId: { exact: ui.mic.value },
+                channelCount: 1, sampleRate: 16000,
+                echoCancellation: false, noiseSuppression: false, autoGainControl: false 
+            }
+        });
+
+        micSource = audioCtx.createMediaStreamSource(micStream);
+        inputAnalyser = audioCtx.createAnalyser();
+        inputAnalyser.fftSize = 256;
+        micSource.connect(inputAnalyser);
+
+        outputAnalyser = audioCtx.createAnalyser();
+        outputAnalyser.fftSize = 256;
+        outputAnalyser.connect(audioCtx.destination);
+
+        drawMeters();
+    } catch(e) { console.error(e); }
+}
+ui.mic.onchange = startMonitoring;
+
+function drawMeters() {
+    if(!audioCtx) return;
+    if(inputAnalyser) {
+        const d = new Uint8Array(inputAnalyser.frequencyBinCount);
+        inputAnalyser.getByteFrequencyData(d);
+        ui.fillIn.style.width = Math.min(100, (d[0]/255)*300) + "%";
     }
+    if(outputAnalyser) {
+        const d = new Uint8Array(outputAnalyser.frequencyBinCount);
+        outputAnalyser.getByteFrequencyData(d);
+        ui.fillOut.style.width = Math.min(100, (d[0]/255)*300) + "%";
+    }
+    requestAnimationFrame(drawMeters);
 }
-navigator.mediaDevices.getUserMedia({audio:true}).then(s=>{s.getTracks().forEach(t=>t.stop()); loadDevices();}).catch(e=>log(e.message,"err"));
 
-// --- AUDIO ENGINE (RECORDING) ---
-async function startAudio() {
-    ctx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 }); // Try to force 16k
+// 3. TOGGLE CONNECTION
+ui.btn.onclick = async () => {
+    if (isConnected) {
+        disconnect("Beendet durch Benutzer");
+        return;
+    }
+
+    if(typeof CONFIG_API_KEY === 'undefined') return alert("config.js fehlt!");
+    if(audioCtx.state === 'suspended') await audioCtx.resume();
     
-    // Resume context if suspended (Chrome policy)
-    if (ctx.state === 'suspended') await ctx.resume();
+    if(audioCtx.setSinkId && ui.spk.value) {
+        try { await audioCtx.setSinkId(ui.spk.value); } catch(e){}
+    }
 
-    const constraints = {
-        audio: {
-            deviceId: { exact: ui.mic.value },
-            channelCount: 1,
-            sampleRate: 16000, // Request 16k
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true
+    // UI Update -> Connecting
+    ui.btn.textContent = "Verbinde...";
+    ui.btn.className = "btn-connecting";
+    ui.btn.disabled = true;
+    ui.status.innerText = "Handshake...";
+
+    const url = `${CONFIG.host}?key=${CONFIG_API_KEY}`;
+    
+    try {
+        ws = new WebSocket(url);
+    } catch(e) { disconnect("WS Init Fehler"); return; }
+
+    // Worklet verbinden
+    workletNode = new AudioWorkletNode(audioCtx, 'pcm-processor');
+    workletNode.port.onmessage = (e) => {
+        if(!isConnected || !ws || ws.readyState !== WebSocket.OPEN) return;
+        
+        const float32 = e.data;
+        const pcm = new Int16Array(float32.length);
+        for(let i=0; i<float32.length; i++) {
+            const s = Math.max(-1, Math.min(1, float32[i]));
+            pcm[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
         }
+        
+        const b64 = btoa(String.fromCharCode(...new Uint8Array(pcm.buffer)));
+        ws.send(JSON.stringify({ realtime_input: { media_chunks: [{ mime_type: "audio/pcm", data: b64 }] } }));
     };
 
-    micStream = await navigator.mediaDevices.getUserMedia(constraints);
-    const source = ctx.createMediaStreamSource(micStream);
-    
-    // Processor: Buffer size 2048 or 4096. 
-    // WARNING: ScriptProcessor is deprecated but works everywhere without separate files. 
-    // Ideally use AudioWorklet for production.
-    inputProcessor = ctx.createScriptProcessor(4096, 1, 1);
-    
-    inputProcessor.onaudioprocess = (e) => {
-        if (!isConnected) return;
+    inputAnalyser.disconnect();
+    inputAnalyser.connect(workletNode);
+    workletNode.connect(audioCtx.destination);
 
-        const inputData = e.inputBuffer.getChannelData(0);
-        
-        // 1. Resample logic if context isn't 16k (Skip for simplicity, rely on ctx being close)
-        // 2. Convert to PCM Int16
-        const pcm16 = floatTo16BitPCM(inputData);
-        
-        // 3. Send to WS
-        sendAudioChunk(pcm16);
-        
-        // 4. Visualize
-        drawVis(inputData);
-    };
-
-    source.connect(inputProcessor);
-    inputProcessor.connect(ctx.destination); // Mute locally? No, destination needed for processing to fire in some browsers
-    // Actually, to mute loopback, we connect processor to destination but don't output audio in process.
-    // The processor output is usually silence unless we copy input to output.
-}
-
-function stopAudio() {
-    if (micStream) micStream.getTracks().forEach(t => t.stop());
-    if (inputProcessor) { inputProcessor.disconnect(); inputProcessor.onaudioprocess = null; }
-    if (ctx) ctx.close();
-}
-
-// --- GEMINI CLIENT ---
-function connect() {
-    const key = ui.key.value.trim();
-    if (!key) return alert("API Key Required!");
-
-    ui.btn.textContent = "Connecting...";
-    ui.status.textContent = "Handshake...";
-    
-    // Construct URL
-    const url = `wss://${HOST}/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${key}`;
-    
-    ws = new WebSocket(url);
-
-    ws.onopen = async () => {
-        log("Connected to Gemini Live", "sys");
-        ui.btn.textContent = "STOP SESSION";
-        ui.btn.className = "active";
-        ui.status.textContent = "Live";
-        isConnected = true;
-        nextStartTime = 0; // Reset playback clock
-
-        // 1. Setup Message (JSON)
-        const setupMsg = {
+    ws.onopen = () => {
+        const setup = {
             setup: {
-                model: MODEL,
-                generation_config: {
-                    response_modalities: ["AUDIO"], // We want Audio back
-                    speech_config: {
-                        voice_config: { prebuilt_voice_config: { voice_name: ui.voice.value } }
-                    }
+                model: ui.model.value,
+                generation_config: { 
+                    response_modalities: ["AUDIO"],
+                    speech_config: { voice_config: { prebuilt_voice_config: { voice_name: ui.voice.value } } }
                 },
-                system_instruction: {
-                  parts: [{ text: "You are a live translator. You translate immediately. Do not chatter. Just translate." }]
+                system_instruction: { 
+                    parts: [{ text: `You are a translator. Translate input into ${ui.lang.value} immediately.` }] 
                 }
             }
         };
-        ws.send(JSON.stringify(setupMsg));
+        ws.send(JSON.stringify(setup));
         
-        // 2. Start Mic
-        await startAudio();
+        // Safety Check nach 1s
+        setTimeout(() => {
+            if(ws && ws.readyState === WebSocket.OPEN) {
+                isConnected = true;
+                ui.btn.textContent = "Verbindung Trennen";
+                ui.btn.className = "btn-live";
+                ui.btn.disabled = false;
+                ui.status.innerHTML = "<span style='color:var(--green)'>● ONLINE</span>";
+                nextStartTime = audioCtx.currentTime;
+            } else {
+                // Falls WS schon wieder zu ist
+                if(!isConnected) disconnect("Verbindung abgelehnt (Quota/Modell)");
+            }
+        }, 1000);
     };
 
     ws.onmessage = async (evt) => {
-        let msg;
-        if (evt.data instanceof Blob) {
-            msg = JSON.parse(await evt.data.text());
-        } else {
-            msg = JSON.parse(evt.data);
-        }
-
-        if (msg.serverContent) {
-            // A. Audio Turn
-            if (msg.serverContent.modelTurn) {
-                const parts = msg.serverContent.modelTurn.parts;
-                for (const p of parts) {
-                    if (p.inlineData && p.inlineData.mimeType.startsWith('audio')) {
-                        // Audio Chunk received
-                        queueAudio(p.inlineData.data);
-                    }
-                }
-            }
-            // B. Turn Complete (Interrupt logic could go here)
-            if (msg.serverContent.turnComplete) {
-                // log("Turn complete", "sys");
-            }
+        const data = JSON.parse(evt.data instanceof Blob ? await evt.data.text() : evt.data);
+        if(data.serverContent?.modelTurn?.parts) {
+            data.serverContent.modelTurn.parts.forEach(p => {
+                if(p.inlineData?.mimeType.startsWith('audio')) playAudio(p.inlineData.data);
+            });
         }
     };
 
-    ws.onclose = () => {
-        log("Disconnected", "sys");
-        disconnect();
+    ws.onclose = (e) => {
+        console.log("Close Code:", e.code, e.reason);
+        let msg = "Getrennt";
+        if(e.code === 1011) msg = "⚠️ Modell überlastet oder Limit";
+        disconnect(msg);
     };
-
-    ws.onerror = (e) => {
-        log("WebSocket Error", "err");
-        console.error(e);
-        disconnect();
-    };
-}
-
-function sendAudioChunk(pcmData) {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-        // Prepare BidiRealtimeInput
-        const b64 = arrayBufferToBase64(pcmData.buffer);
-        const msg = {
-            realtime_input: {
-                media_chunks: [{
-                    mime_type: "audio/pcm",
-                    data: b64
-                }]
-            }
-        };
-        ws.send(JSON.stringify(msg));
-    }
-}
-
-function disconnect() {
-    isConnected = false;
-    if (ws) { ws.close(); ws = null; }
-    stopAudio();
-    ui.btn.textContent = "START LIVE SESSION";
-    ui.btn.className = "start";
-    ui.status.textContent = "Idle";
-}
-
-// --- PLAYBACK ENGINE ---
-function queueAudio(base64Data) {
-    // 1. Decode
-    const arrayBuffer = base64ToArrayBuffer(base64Data);
-    const pcm16 = new Int16Array(arrayBuffer);
     
-    // 2. Create Float32 Buffer for AudioContext
-    const float32 = new Float32Array(pcm16.length);
-    for (let i=0; i<pcm16.length; i++) {
-        float32[i] = pcm16[i] / 32768; // Normalize to -1..1
-    }
-
-    // 3. Schedule Playback
-    // Ensure we are using the correct context (Sample Rate of response is usually 24k)
-    // We can resample or let AudioBuffer handle it. 
-    // Gemini Output is PCM 24000Hz usually.
-    
-    const audioBuffer = ctx.createBuffer(1, float32.length, 24000); 
-    audioBuffer.copyToChannel(float32, 0);
-
-    const source = ctx.createBufferSource();
-    source.buffer = audioBuffer;
-    source.connect(ctx.destination);
-
-    // Drift Correction logic
-    const currentTime = ctx.currentTime;
-    if (nextStartTime < currentTime) nextStartTime = currentTime;
-    
-    source.start(nextStartTime);
-    nextStartTime += audioBuffer.duration;
-}
-
-// --- VISUALIZER ---
-function drawVis(dataArray) {
-    const width = ui.cvs.width;
-    const height = ui.cvs.height;
-    cvsCtx.fillStyle = '#000';
-    cvsCtx.fillRect(0, 0, width, height);
-    
-    cvsCtx.lineWidth = 2;
-    cvsCtx.strokeStyle = '#4a9eff';
-    cvsCtx.beginPath();
-    
-    const sliceWidth = width * 1.0 / dataArray.length;
-    let x = 0;
-    
-    for(let i = 0; i < dataArray.length; i++) {
-        const v = dataArray[i]; // -1 to 1
-        const y = (v + 1) / 2 * height;
-        if(i === 0) cvsCtx.moveTo(x, y);
-        else cvsCtx.lineTo(x, y);
-        x += sliceWidth;
-    }
-    cvsCtx.stroke();
-}
-
-// --- EVENTS ---
-ui.btn.onclick = () => {
-    if (isConnected) disconnect();
-    else connect();
+    ws.onerror = () => disconnect("Netzwerkfehler");
 };
 
+function disconnect(msg) {
+    isConnected = false;
+    
+    if(ws) { ws.close(); ws = null; }
+    if(workletNode) { workletNode.disconnect(); workletNode = null; }
+
+    // Audio-Pfad resetten
+    if(inputAnalyser && micSource) {
+        inputAnalyser.disconnect(); // Trennt Worklet
+        micSource.connect(inputAnalyser); // Verbindet wieder mit Source für Meter
+    }
+
+    ui.btn.textContent = "Session Starten";
+    ui.btn.className = "btn-ready";
+    ui.btn.disabled = false;
+    ui.status.innerText = msg;
+    ui.status.style.color = msg.includes("⚠️") ? "#ef4444" : "#64748b";
+}
+
+function playAudio(b64) {
+    if(!audioCtx) return;
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for(let i=0; i<bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const pcm = new Int16Array(bytes.buffer);
+    const float = new Float32Array(pcm.length);
+    for(let i=0; i<pcm.length; i++) float[i] = pcm[i] / 32768;
+
+    const buf = audioCtx.createBuffer(1, float.length, 24000);
+    buf.copyToChannel(float, 0);
+
+    const src = audioCtx.createBufferSource();
+    src.buffer = buf;
+    if(outputAnalyser) src.connect(outputAnalyser);
+    else src.connect(audioCtx.destination);
+
+    const now = audioCtx.currentTime;
+    if(nextStartTime < now) nextStartTime = now;
+    src.start(nextStartTime);
+    nextStartTime += buf.duration;
+}
+
+init();
 </script>
 </body>
 </html>
