@@ -2,40 +2,38 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Gemini Live Core (Stable)</title>
+    <title>Gemini Live (Buffered Fix)</title>
     <script src="config.js"></script>
     <style>
         :root { --bg: #0b1120; --panel: #1e293b; --accent: #3b82f6; --text: #f1f5f9; --green: #10b981; --red: #ef4444; }
         body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
         
-        .panel { background: var(--panel); padding: 32px; border-radius: 24px; width: 100%; max-width: 650px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); border: 1px solid #334155; }
-        h1 { margin: 0; font-size: 1.8rem; font-weight: 800; text-align: center; background: linear-gradient(to right, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .panel { background: var(--panel); padding: 32px; border-radius: 24px; width: 100%; max-width: 600px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); border: 1px solid #334155; }
+        h1 { margin: 0; font-size: 1.8rem; font-weight: 800; text-align: center; color: var(--text); }
         .tagline { text-align: center; color: #64748b; font-size: 0.85rem; margin-bottom: 25px; font-family: monospace; }
 
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
         .full { grid-column: span 2; }
         
-        label { font-size: 0.7rem; color: #94a3b8; margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; }
+        label { font-size: 0.7rem; color: #94a3b8; margin-bottom: 6px; display: block; text-transform: uppercase; font-weight: 700; }
         
         select, button { width: 100%; padding: 12px 16px; background: #0f172a; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; font-size: 0.95rem; outline: none; transition: all 0.2s; }
         select:focus { border-color: var(--accent); }
         
-        button { font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 10px; border: none; }
-        
-        /* Button States */
-        .btn-ready { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4); }
+        button { font-weight: 700; cursor: pointer; text-transform: uppercase; margin-top: 10px; border: none; }
+        .btn-ready { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
         .btn-connecting { background: #475569; cursor: wait; opacity: 0.8; }
-        .btn-live { background: #ef4444; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4); animation: pulse 2s infinite; }
+        .btn-live { background: #ef4444; box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); animation: pulse 2s infinite; }
         
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
 
         #status { text-align: center; font-size: 0.9rem; color: #64748b; margin-top: 20px; font-weight: 500; height: 24px; }
 
         .meter-group { background: #0b1120; border-radius: 12px; padding: 12px; border: 1px solid #334155; margin-top: 8px; }
-        .meter-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .meter-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
         .meter-label { font-size: 0.7rem; font-weight: 700; color: #64748b; }
         .track { width: 100%; height: 6px; background: #1e293b; border-radius: 3px; overflow: hidden; }
-        .bar { height: 100%; width: 0%; transition: width 0.08s ease-out; border-radius: 3px; }
+        .bar { height: 100%; width: 0%; transition: width 0.1s ease-out; border-radius: 3px; }
         #fillIn { background: var(--green); }
         #fillOut { background: var(--accent); }
     </style>
@@ -43,15 +41,15 @@
 <body>
 
     <div class="panel">
-        <h1>Gemini Live Core</h1>
-        <div class="tagline">AudioWorklet Engine • v6 Stable</div>
+        <h1>Gemini Live</h1>
+        <div class="tagline">v7 • Buffered Audio • Quota Safe</div>
         
         <div class="grid">
             <div class="full">
-                <label>KI Modell (Versuche wechseln bei Fehler)</label>
+                <label>KI Modell</label>
                 <select id="modelSelect">
-                    <option value="models/gemini-2.0-flash-exp">Gemini 2.0 Flash Exp (Standard)</option>
-                    <option value="models/gemini-2.0-flash-thinking-exp-1219">Gemini 2.0 Thinking (Alternativ)</option>
+                    <option value="models/gemini-2.0-flash-exp">Gemini 2.0 Flash Exp</option>
+                    <option value="models/gemini-2.0-flash-thinking-exp-1219">Gemini 2.0 Thinking</option>
                 </select>
             </div>
             <div>
@@ -60,7 +58,6 @@
                     <option value="English">Englisch 🇺🇸</option>
                     <option value="German">Deutsch 🇩🇪</option>
                     <option value="Spanish">Spanisch 🇪🇸</option>
-                    <option value="Japanese">Japanisch 🇯🇵</option>
                 </select>
             </div>
             <div>
@@ -68,9 +65,7 @@
                  <select id="voiceName">
                     <option value="Puck">Puck (M)</option>
                     <option value="Aoede">Aoede (W)</option>
-                    <option value="Charon">Charon (M)</option>
                     <option value="Kore">Kore (W)</option>
-                    <option value="Fenrir">Fenrir (M)</option>
                  </select>
             </div>
         </div>
@@ -80,7 +75,7 @@
                 <label>Mikrofon</label>
                 <select id="micSelect"><option>Lade Geräte...</option></select>
                 <div class="meter-group">
-                    <div class="meter-row"><span class="meter-label">MIC INPUT</span></div>
+                    <div class="meter-row"><span class="meter-label">INPUT</span></div>
                     <div class="track"><div class="bar" id="fillIn"></div></div>
                 </div>
             </div>
@@ -89,7 +84,7 @@
                 <label>Lautsprecher</label>
                 <select id="speakerSelect"><option>Standard</option></select>
                 <div class="meter-group">
-                    <div class="meter-row"><span class="meter-label">AI OUTPUT</span></div>
+                    <div class="meter-row"><span class="meter-label">OUTPUT</span></div>
                     <div class="track"><div class="bar" id="fillOut"></div></div>
                 </div>
             </div>
@@ -100,32 +95,40 @@
     </div>
 
 <script>
-// --- AUDIO WORKLET (INLINED) ---
+// --- AUDIO WORKLET MIT BUFFER (DER FIX) ---
+// Sammelt 4096 Samples (~0.25s) bevor gesendet wird.
+// Verhindert, dass wir das API-Limit sprengen.
 const WORKLET_CODE = `
-class PCMProcessor extends AudioWorkletProcessor {
+class BufferedProcessor extends AudioWorkletProcessor {
+    constructor() {
+        super();
+        this.bufferSize = 4096; 
+        this.buffer = new Float32Array(this.bufferSize);
+        this.index = 0;
+    }
     process(inputs, outputs) {
         const input = inputs[0];
         if (input && input.length > 0) {
-            this.port.postMessage(input[0]);
+            const channel = input[0];
+            for (let i = 0; i < channel.length; i++) {
+                this.buffer[this.index++] = channel[i];
+                if (this.index >= this.bufferSize) {
+                    this.port.postMessage(this.buffer);
+                    this.index = 0;
+                }
+            }
         }
         return true;
     }
 }
-registerProcessor('pcm-processor', PCMProcessor);
+registerProcessor('buffered-processor', BufferedProcessor);
 `;
 
 const CONFIG = { host: "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent" };
 
-// Global State
-let audioCtx = null;
-let workletNode = null;
-let micStream = null;
-let micSource = null;
-let inputAnalyser = null;
-let outputAnalyser = null;
-let ws = null;
-let isConnected = false;
-let nextStartTime = 0;
+let audioCtx = null, workletNode = null, micStream = null, micSource = null;
+let inputAnalyser = null, outputAnalyser = null, ws = null;
+let isConnected = false, nextStartTime = 0;
 
 const ui = {
     mic: document.getElementById('micSelect'),
@@ -154,18 +157,17 @@ async function init() {
             if(d.kind === 'audiooutput') ui.spk.appendChild(opt);
         });
 
-        // Voicemeeter Auto-Select
         const vmIn = Array.from(ui.mic.options).find(o => o.text.includes("VoiceMeeter Out"));
         if(vmIn) ui.mic.value = vmIn.value;
-
+        
         startMonitoring();
-    } catch(e) { ui.status.innerText = "Mikrofon fehlt!"; ui.status.style.color = "red"; }
+    } catch(e) { ui.status.innerText = "Mikrofon fehlt!"; }
 }
 
-// 2. MONITORING
+// 2. MONITORING & ENGINE SETUP
 async function startMonitoring() {
     if(audioCtx) await audioCtx.close();
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000, latencyHint: 'interactive' });
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
     
     // Worklet laden
     const blob = new Blob([WORKLET_CODE], { type: 'application/javascript' });
@@ -173,73 +175,57 @@ async function startMonitoring() {
 
     try {
         micStream = await navigator.mediaDevices.getUserMedia({
-            audio: { 
-                deviceId: { exact: ui.mic.value },
-                channelCount: 1, sampleRate: 16000,
-                echoCancellation: false, noiseSuppression: false, autoGainControl: false 
-            }
+            audio: { deviceId: { exact: ui.mic.value }, channelCount: 1, sampleRate: 16000 }
         });
 
         micSource = audioCtx.createMediaStreamSource(micStream);
         inputAnalyser = audioCtx.createAnalyser();
         inputAnalyser.fftSize = 256;
-        micSource.connect(inputAnalyser);
-
+        
         outputAnalyser = audioCtx.createAnalyser();
         outputAnalyser.fftSize = 256;
-        outputAnalyser.connect(audioCtx.destination);
 
+        micSource.connect(inputAnalyser);
+        outputAnalyser.connect(audioCtx.destination);
+        
         drawMeters();
-    } catch(e) { console.error(e); }
+    } catch(e) {}
 }
 ui.mic.onchange = startMonitoring;
 
 function drawMeters() {
     if(!audioCtx) return;
-    if(inputAnalyser) {
-        const d = new Uint8Array(inputAnalyser.frequencyBinCount);
-        inputAnalyser.getByteFrequencyData(d);
-        ui.fillIn.style.width = Math.min(100, (d[0]/255)*300) + "%";
-    }
-    if(outputAnalyser) {
-        const d = new Uint8Array(outputAnalyser.frequencyBinCount);
-        outputAnalyser.getByteFrequencyData(d);
-        ui.fillOut.style.width = Math.min(100, (d[0]/255)*300) + "%";
-    }
+    const dIn = new Uint8Array(inputAnalyser.frequencyBinCount);
+    inputAnalyser.getByteFrequencyData(dIn);
+    ui.fillIn.style.width = Math.min(100, (dIn[0]/255)*300) + "%";
+
+    const dOut = new Uint8Array(outputAnalyser.frequencyBinCount);
+    outputAnalyser.getByteFrequencyData(dOut);
+    ui.fillOut.style.width = Math.min(100, (dOut[0]/255)*300) + "%";
+    
     requestAnimationFrame(drawMeters);
 }
 
-// 3. TOGGLE CONNECTION
+// 3. START / STOP
 ui.btn.onclick = async () => {
-    if (isConnected) {
-        disconnect("Beendet durch Benutzer");
-        return;
-    }
+    if (isConnected) return disconnect("Beendet");
 
     if(typeof CONFIG_API_KEY === 'undefined') return alert("config.js fehlt!");
     if(audioCtx.state === 'suspended') await audioCtx.resume();
-    
-    if(audioCtx.setSinkId && ui.spk.value) {
-        try { await audioCtx.setSinkId(ui.spk.value); } catch(e){}
-    }
+    if(audioCtx.setSinkId && ui.spk.value) try { await audioCtx.setSinkId(ui.spk.value); } catch(e){}
 
-    // UI Update -> Connecting
     ui.btn.textContent = "Verbinde...";
     ui.btn.className = "btn-connecting";
     ui.btn.disabled = true;
-    ui.status.innerText = "Handshake...";
 
-    const url = `${CONFIG.host}?key=${CONFIG_API_KEY}`;
-    
-    try {
-        ws = new WebSocket(url);
-    } catch(e) { disconnect("WS Init Fehler"); return; }
+    try { ws = new WebSocket(`${CONFIG.host}?key=${CONFIG_API_KEY}`); } catch(e) { return disconnect("WS Fehler"); }
 
-    // Worklet verbinden
-    workletNode = new AudioWorkletNode(audioCtx, 'pcm-processor');
+    // Worklet erstellen
+    workletNode = new AudioWorkletNode(audioCtx, 'buffered-processor');
     workletNode.port.onmessage = (e) => {
         if(!isConnected || !ws || ws.readyState !== WebSocket.OPEN) return;
         
+        // Float32 -> Int16
         const float32 = e.data;
         const pcm = new Int16Array(float32.length);
         for(let i=0; i<float32.length; i++) {
@@ -253,7 +239,7 @@ ui.btn.onclick = async () => {
 
     inputAnalyser.disconnect();
     inputAnalyser.connect(workletNode);
-    workletNode.connect(audioCtx.destination);
+    workletNode.connect(audioCtx.destination); // "Silent" connect um Processor am Leben zu halten
 
     ws.onopen = () => {
         const setup = {
@@ -263,14 +249,11 @@ ui.btn.onclick = async () => {
                     response_modalities: ["AUDIO"],
                     speech_config: { voice_config: { prebuilt_voice_config: { voice_name: ui.voice.value } } }
                 },
-                system_instruction: { 
-                    parts: [{ text: `You are a translator. Translate input into ${ui.lang.value} immediately.` }] 
-                }
+                system_instruction: { parts: [{ text: `You are a translator. Translate to ${ui.lang.value}.` }] }
             }
         };
         ws.send(JSON.stringify(setup));
         
-        // Safety Check nach 1s
         setTimeout(() => {
             if(ws && ws.readyState === WebSocket.OPEN) {
                 isConnected = true;
@@ -279,9 +262,6 @@ ui.btn.onclick = async () => {
                 ui.btn.disabled = false;
                 ui.status.innerHTML = "<span style='color:var(--green)'>● ONLINE</span>";
                 nextStartTime = audioCtx.currentTime;
-            } else {
-                // Falls WS schon wieder zu ist
-                if(!isConnected) disconnect("Verbindung abgelehnt (Quota/Modell)");
             }
         }, 1000);
     };
@@ -296,25 +276,20 @@ ui.btn.onclick = async () => {
     };
 
     ws.onclose = (e) => {
-        console.log("Close Code:", e.code, e.reason);
-        let msg = "Getrennt";
-        if(e.code === 1011) msg = "⚠️ Modell überlastet oder Limit";
-        disconnect(msg);
+        if(e.code === 1011) disconnect("⚠️ Limit erreicht (Warte kurz)");
+        else disconnect("Getrennt");
     };
-    
-    ws.onerror = () => disconnect("Netzwerkfehler");
 };
 
 function disconnect(msg) {
     isConnected = false;
-    
-    if(ws) { ws.close(); ws = null; }
+    if(ws) ws.close();
     if(workletNode) { workletNode.disconnect(); workletNode = null; }
-
-    // Audio-Pfad resetten
+    
+    // Audio Routing Reset
     if(inputAnalyser && micSource) {
-        inputAnalyser.disconnect(); // Trennt Worklet
-        micSource.connect(inputAnalyser); // Verbindet wieder mit Source für Meter
+        inputAnalyser.disconnect();
+        micSource.connect(inputAnalyser);
     }
 
     ui.btn.textContent = "Session Starten";
@@ -328,7 +303,6 @@ function playAudio(b64) {
     if(!audioCtx) return;
     const bin = atob(b64);
     const bytes = new Uint8Array(bin.length);
-    for(let i=0; i<bin.length; i++) bytes[i] = bin.charCodeAt(i);
     const pcm = new Int16Array(bytes.buffer);
     const float = new Float32Array(pcm.length);
     for(let i=0; i<pcm.length; i++) float[i] = pcm[i] / 32768;
