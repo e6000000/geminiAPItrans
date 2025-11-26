@@ -1,8 +1,8 @@
 // config.js
 
-// Ersetze den Text in den Anführungszeichen mit deinem echten Google API Key  AIzaSyD2AHThvr9NF1cu9MQ5kfboHWTBA42h9UY
-// const CONFIG_API_KEY = "AIzaSyAREpxEF00zy49XoxSNtmRJGY7w9seso-E";
-const CONFIG_API_KEY = "AIzaSyD2AHThvr9NF1cu9MQ5kfboHWTBA42h9UY";
+// Ersetze den Text in den Anführungszeichen mit deinem echten Google API Key  AIzaSyD2AHThvr9NF1cu9MQ5kfboHWTBA42h9UY     AIzaSyAsrb4mFiKnLT27EB-FlTIHcGwQdfFfnTc
+// const CONFIG_API_KEY = "AIzaSyAREpxEF00zy49XoxSNtmRJGY7w9seso-E";    AIzaSyAsrb4mFiKnLT27EB-FlTIHcGwQdfFfnTc
+const CONFIG_API_KEY = "AIzaSyBz9bHElpkkjkbp6YTcnHRdCR11YyXutUM";
 // Optional: Wähle eine Standard-Stimme (Puck, Charon, Kore, Fenrir, Aoede)
 const CONFIG_VOICE = "Puck";
 
