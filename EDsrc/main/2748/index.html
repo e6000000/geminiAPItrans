@@ -2,89 +2,24 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Gemini Live (Modular)</title>
+    <title>Gemini 5s Takt</title>
     <script src="config.js"></script>
     <style>
-        :root { --bg: #0b1120; --panel: #1e293b; --accent: #3b82f6; --text: #f1f5f9; --green: #10b981; --red: #ef4444; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
-        .panel { background: var(--panel); padding: 32px; border-radius: 24px; width: 100%; max-width: 600px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); border: 1px solid #334155; }
-        h1 { margin: 0; font-size: 1.8rem; font-weight: 800; text-align: center; color: var(--text); }
-        .tagline { text-align: center; color: #64748b; font-size: 0.85rem; margin-bottom: 25px; font-family: monospace; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
-        .full { grid-column: span 2; }
-        label { font-size: 0.7rem; color: #94a3b8; margin-bottom: 6px; display: block; text-transform: uppercase; font-weight: 700; }
-        select, button { width: 100%; padding: 12px 16px; background: #0f172a; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; font-size: 0.95rem; outline: none; transition: all 0.2s; }
-        select:focus { border-color: var(--accent); }
-        button { font-weight: 700; cursor: pointer; text-transform: uppercase; margin-top: 10px; border: none; }
-        .btn-ready { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
-        .btn-connecting { background: #475569; cursor: wait; opacity: 0.8; }
-        .btn-live { background: #ef4444; box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
-        #status { text-align: center; font-size: 0.9rem; color: #64748b; margin-top: 20px; font-weight: 500; height: 24px; white-space: pre-wrap;}
-        .meter-group { background: #0b1120; border-radius: 12px; padding: 12px; border: 1px solid #334155; margin-top: 8px; }
-        .meter-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
-        .meter-label { font-size: 0.7rem; font-weight: 700; color: #64748b; }
-        .track { width: 100%; height: 6px; background: #1e293b; border-radius: 3px; overflow: hidden; }
-        .bar { height: 100%; width: 0%; transition: width 0.1s ease-out; border-radius: 3px; }
-        #fillIn { background: var(--green); }
-        #fillOut { background: var(--accent); }
+        body { background: #111; color: #eee; font-family: monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
+        .box { background: #222; padding: 20px; border: 1px solid #444; border-radius: 10px; width: 300px; text-align: center; }
+        select { width: 100%; padding: 10px; margin: 10px 0; background: #000; color: #fff; border: 1px solid #555; }
+        button { width: 100%; padding: 15px; font-weight: bold; cursor: pointer; background: #2563eb; color: white; border: none; border-radius: 5px; }
+        #status { margin-top: 15px; color: #888; }
     </style>
 </head>
 <body>
-    <div class="panel">
-        <h1>Gemini Live</h1>
-        <div class="tagline">Modular Engine • Buffered Input</div>
-        
-        <div class="grid">
-            <div class="full">
-                <label>KI Modell</label>
-                <select id="modelSelect">
-                    <option value="models/gemini-2.0-flash-exp">Gemini 2.0 Flash Exp</option>
-                    <option value="models/gemini-2.0-flash-thinking-exp-1219">Gemini 2.0 Thinking</option>
-                </select>
-            </div>
-            <div>
-                <label>Zielsprache</label>
-                <select id="targetLang">
-                    <option value="English">Englisch 🇺🇸</option>
-                    <option value="German">Deutsch 🇩🇪</option>
-                    <option value="Spanish">Spanisch 🇪🇸</option>
-                </select>
-            </div>
-            <div>
-                 <label>Stimme</label>
-                 <select id="voiceName">
-                    <option value="Puck">Puck (M)</option>
-                    <option value="Aoede">Aoede (W)</option>
-                    <option value="Kore">Kore (W)</option>
-                 </select>
-            </div>
-        </div>
-
-        <div class="grid">
-            <div class="full">
-                <label>Mikrofon</label>
-                <select id="micSelect"><option>Lade Geräte...</option></select>
-                <div class="meter-group">
-                    <div class="meter-row"><span class="meter-label">INPUT</span></div>
-                    <div class="track"><div class="bar" id="fillIn"></div></div>
-                </div>
-            </div>
-
-            <div class="full">
-                <label>Lautsprecher</label>
-                <select id="speakerSelect"><option>Standard</option></select>
-                <div class="meter-group">
-                    <div class="meter-row"><span class="meter-label">OUTPUT</span></div>
-                    <div class="track"><div class="bar" id="fillOut"></div></div>
-                </div>
-            </div>
-        </div>
-
-        <button id="btnMain" class="btn-ready">Session Starten</button>
+    <div class="box">
+        <h2>🛡️ 5-Sekunden Takt</h2>
+        <select id="micSelect"></select>
+        <select id="speakerSelect"></select>
+        <button id="btnMain">START (5s Takt)</button>
         <div id="status">Bereit.</div>
     </div>
-
     <script src="app.js"></script>
 </body>
 </html>

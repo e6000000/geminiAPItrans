@@ -1,10 +1,10 @@
 // processor.js
-class BufferedProcessor extends AudioWorkletProcessor {
+class FiveSecondProcessor extends AudioWorkletProcessor {
     constructor() {
         super();
-        // 8000 Samples = ca. 0.5 Sekunden bei 16kHz
-        // Das verhindert "Too Many Requests" zuverlässig.
-        this.bufferSize = 8000; 
+        // 16.000 Hz * 5 Sekunden = 80.000 Samples
+        // Das garantiert, dass wir nur 12 mal pro Minute senden.
+        this.bufferSize = 80000; 
         this.buffer = new Float32Array(this.bufferSize);
         this.index = 0;
     }
@@ -14,11 +14,16 @@ class BufferedProcessor extends AudioWorkletProcessor {
         if (input && input.length > 0) {
             const channel = input[0];
             for (let i = 0; i < channel.length; i++) {
+                // Wir füllen den Puffer Sample für Sample
                 this.buffer[this.index++] = channel[i];
                 
-                // Wenn Buffer voll ist -> Senden!
+                // Erst wenn der Puffer VOLL ist (nach 5 Sekunden), senden wir
                 if (this.index >= this.bufferSize) {
-                    this.port.postMessage(this.buffer);
+                    // Klonen, damit der Hauptthread die Daten sicher hat
+                    const dataToSend = this.buffer.slice(); 
+                    this.port.postMessage(dataToSend);
+                    
+                    // Reset für die nächsten 5 Sekunden
                     this.index = 0;
                 }
             }
@@ -27,4 +32,4 @@ class BufferedProcessor extends AudioWorkletProcessor {
     }
 }
 
-registerProcessor('buffered-processor', BufferedProcessor);
+registerProcessor('five-second-processor', FiveSecondProcessor);
